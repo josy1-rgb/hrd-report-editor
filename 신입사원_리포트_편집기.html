@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>신입사원 리포트 편집기</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Noto Sans CJK KR", "Malgun Gothic", sans-serif;
+    background: #eef1f6;
+    color: #222;
+    height: 100vh;
+    overflow: hidden;
+  }
+  .app { display: flex; height: 100vh; }
+
+  .panel-form {
+    width: 460px;
+    flex-shrink: 0;
+    background: #ffffff;
+    border-right: 1px solid #dfe3ea;
+    overflow-y: auto;
+    height: 100vh;
+  }
+  .panel-header {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: #16264A;
+    color: #fff;
+    padding: 16px 20px;
+  }
+  .panel-header .t1 { font-size: 15px; font-weight: 700; }
+  .panel-header .t2 { font-size: 11px; color: #b9c6de; margin-top: 2px; }
+  .print-btn {
+    margin-top: 10px;
+    display: inline-block;
+    background: #12B4A0;
+    color: #fff;
+    border: none;
+    padding: 7px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .print-btn:hover { background: #0ea08e; }
+
+  .form-body { padding: 6px 18px 40px 18px; }
+
+  .fsection {
+    margin-top: 18px;
+    border-top: 1px solid #eef0f5;
+    padding-top: 12px;
+  }
+  .fsection:first-child { border-top: none; }
+  .fsection h3 {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #16264A;
+    margin: 0 0 8px 0;
+    display: flex;
+    align-items: center;
+  }
+  .fsection h3 .n {
+    display: inline-block;
+    width: 18px; height: 18px;
+    background: #16264A;
+    color: #fff;
+    border-radius: 5px;
+    font-size: 10px;
+    text-align: center;
+    line-height: 18px;
+    margin-right: 6px;
+  }
+  .fsection .hint { font-size: 10px; color: #9aa2b1; margin: -4px 0 8px 0; }
+
+  .frow { margin-bottom: 8px; }
+  .frow label {
+    display: block;
+    font-size: 10.5px;
+    color: #6b7280;
+    margin-bottom: 3px;
+    font-weight: 600;
+  }
+  .frow input[type=text], .frow input[type=date], .frow input[type=number] {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #d8dce5;
+    border-radius: 5px;
+    font-size: 12px;
+    font-family: inherit;
+    background: #fffdf2;
+  }
+  .frow textarea {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #d8dce5;
+    border-radius: 5px;
+    font-size: 12px;
+    font-family: inherit;
+    background: #fffdf2;
+    resize: vertical;
+    min-height: 46px;
+  }
+  .frow input:focus, .frow textarea:focus {
+    outline: none;
+    border-color: #12B4A0;
+    background: #ffffff;
+  }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  .item-card { background: #f8f9fb; border: 1px solid #e6e9f0; border-radius: 7px; padding: 9px 10px; margin-bottom: 8px; transition: opacity .15s; }
+  .item-card.is-off { opacity: 0.42; }
+  .item-card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .score-input-sm { width: 66px; padding: 4px 6px; border: 1px solid #d8dce5; border-radius: 4px; font-size: 11.5px; text-align: right; background: #fffdf2; }
+  .item-card textarea {
+    width: 100%; font-size: 13px; line-height: 1.7; padding: 8px 9px; color: #262b38;
+    border: 1px solid #d8dce5; border-radius: 5px; background: #fffdf2; min-height: 78px; resize: vertical;
+    font-family: inherit;
+  }
+
+  /* -------- toggle switch -------- */
+  .toggle-row { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .toggle-row .toggle-text { font-size: 12.5px; font-weight: 700; color: #16264A; }
+  .toggle-switch { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; }
+  .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+  .toggle-switch .slider { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: #d8dce5; border-radius: 20px; cursor: pointer; transition: background .2s; }
+  .toggle-switch .slider::before {
+    content: ""; position: absolute; height: 14px; width: 14px; left: 3px; top: 3px;
+    background: #fff; border-radius: 50%; transition: transform .2s; box-shadow: 0 1px 2px rgba(0,0,0,.25);
+  }
+  .toggle-switch input:checked + .slider { background: #12B4A0; }
+  .toggle-switch input:checked + .slider::before { transform: translateX(16px); }
+
+  .disc-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 9px; background: #f8f9fb; border: 1px solid #e6e9f0; border-radius: 7px; margin-bottom: 6px; transition: opacity .15s; }
+  .disc-row.is-off { opacity: 0.42; }
+  .disc-row .toggle-row { flex: 1; }
+
+  table.edit-table { width: 100%; border-collapse: collapse; font-size: 10.8px; margin-bottom: 6px; }
+  table.edit-table th { background: #16264A; color: #fff; padding: 5px 4px; font-size: 9.8px; font-weight: 600; }
+  table.edit-table td { padding: 3px 2px; border-bottom: 1px solid #eef0f5; }
+  table.edit-table input[type=text], table.edit-table input[type=number] {
+    width: 100%; padding: 4px; border: 1px solid #d8dce5; border-radius: 4px; font-size: 10.8px; background: #fffdf2; text-align: center;
+  }
+  table.edit-table td.readonly { text-align: center; font-weight: 700; color: #16264A; background: #f4f6fa; font-size: 11px; }
+  .row-del { background: #fbe9ea; color: #c23849; border: none; border-radius: 4px; width: 22px; height: 22px; cursor: pointer; font-size: 11px; font-weight:700; }
+  .row-del:hover { background: #f6d3d5; }
+  .add-row-btn {
+    width: 100%; padding: 7px; background: #eef8f6; border: 1px dashed #12B4A0; color: #0a9b83;
+    border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; margin-bottom: 10px;
+  }
+  .add-row-btn:hover { background: #e2f4f0; }
+
+  .summary-toggle-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .gen-btn {
+    background: #eef1f6; border: 1px solid #d8dce5; border-radius: 5px; padding: 4px 9px;
+    font-size: 10px; cursor: pointer; color: #16264A; font-weight: 700;
+  }
+  .gen-btn:hover { background: #e2e6ee; }
+  .mini-label2 { font-size: 10.5px; font-weight: 700; color: #16264A; margin: 10px 0 4px 0; }
+
+  .panel-preview {
+    flex: 1;
+    background: #dde2ea;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    overflow-y: auto;
+    height: 100vh;
+    padding: 24px;
+  }
+  .preview-shell {
+    width: 794px;
+    max-width: 100%;
+    background: #fff;
+    box-shadow: 0 6px 24px rgba(20,30,60,0.18);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  iframe#preview {
+    width: 100%;
+    border: none;
+    display: block;
+    height: 3200px;
+  }
+
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-thumb { background: #c4cad6; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="panel-form">
+    <div class="panel-header">
+      <div class="t1">📋 신입사원 리포트 편집기</div>
+      <div class="t2">항목을 입력하면 오른쪽 미리보기가 실시간으로 바뀝니다</div>
+      <button class="print-btn" onclick="printReport()">🖨️ PDF로 저장 / 인쇄</button>
+    </div>
+
+    <div class="form-body">
+
+      <div class="fsection">
+        <h3><span class="n">1</span>기본 정보</h3>
+        <div class="grid2">
+          <div class="frow"><label>이름</label><input type="text" id="f_name" value="김민지"></div>
+          <div class="frow"><label>팀</label><input type="text" id="f_team" value="온라인 수학 1팀"></div>
+          <div class="frow"><label>입사일</label><input type="date" id="f_join" value="2026-07-06"></div>
+          <div class="frow"><label>소속팀장</label><input type="text" id="f_leader" value="이수현 팀장"></div>
+          <div class="frow"><label>수료일</label><input type="date" id="f_grad" value="2026-08-03"></div>
+          <div class="frow"><label>육성팀 담당자</label><input type="text" id="f_hrd" value="박지훈 매니저"></div>
+        </div>
+      </div>
+
+      <div class="fsection">
+        <h3><span class="n">2</span>영역별 평가 점수</h3>
+        <div class="hint">항목 체크를 해제하면 리포트에서 제외됩니다. 설명 문구도 자유롭게 수정하세요. ("- "로 시작하는 줄은 리포트에서 불릿으로 표시됩니다)</div>
+        <div id="areaForm"></div>
+      </div>
+
+      <div class="fsection">
+        <h3><span class="n">3</span>1주차 Discovery 평가</h3>
+        <div class="hint">해당 신입사원이 수행하지 않은 항목은 체크 해제하면 리포트에서 빠집니다.</div>
+        <div id="discForm"></div>
+      </div>
+
+      <div class="fsection">
+        <h3><span class="n">4</span>2~4주차 Incubating 평가 (0~100)</h3>
+        <div class="grid2">
+          <div class="frow"><label>개강 전 상담 수행률</label><input type="number" step="0.01" id="f_incub_상담" value="96"></div>
+          <div class="frow"><label>학부모 첫 주 컨택 수행률</label><input type="number" step="0.01" id="f_incub_컨택" value="72"></div>
+        </div>
+      </div>
+
+      <div class="fsection">
+        <h3><span class="n">5</span>학습관리 주요 지표</h3>
+
+        <div class="mini-label2">주차별 학생 배정 (신규 / 이관받기 / 이관보내기)</div>
+        <div class="hint">주차 행 추가/삭제 가능</div>
+        <div id="assignTableWrap"></div>
+
+        <div class="mini-label2">주차별 환불 학생 수 (신규전액환불 / 중도환불 / 총 이탈)</div>
+        <div class="hint">주차 행 추가/삭제 가능</div>
+        <div id="refundTableWrap"></div>
+
+        <div class="mini-label2">요약 문구 (총 배정/이탈 설명)</div>
+        <div class="summary-toggle-row">
+          <label class="toggle-row"><span class="toggle-switch"><input type="checkbox" id="f_summary_enabled" checked><span class="slider"></span></span><span class="toggle-text">리포트에 포함</span></label>
+          <button class="gen-btn" id="genSummaryBtn">자동 생성</button>
+        </div>
+        <div class="frow"><textarea id="f_summary_text" rows="3"></textarea></div>
+      </div>
+
+      <div class="fsection">
+        <h3><span class="n">6</span>Certificate 정답률 (%, 유형 90 / 심화 80 기준)</h3>
+        <div id="certBlocks"></div>
+      </div>
+
+      <div class="fsection">
+        <h3><span class="n">7</span>조직문화 적합성</h3>
+        <div class="frow"><label>근태</label><textarea id="f_cul_gt">출근 시간 및 근무 태도가 성실하며, 무단 지각·결근 없이 안정적으로 근무함.</textarea></div>
+        <div class="frow"><label>업무 자세</label><textarea id="f_cul_att">맡은 업무에 책임감을 가지고 임하며, 어려운 상황에서도 적극적으로 해결하려는 태도를 보임.</textarea></div>
+      </div>
+
+      <div class="fsection">
+        <h3><span class="n">8</span>육성팀 Comment</h3>
+        <div class="frow"><label>강점</label><textarea id="f_com_str">학부모 응대가 침착하고 신뢰감을 주는 편이며, 첫 주 리포트 발송 등 기본 업무 누락이 없음.</textarea></div>
+        <div class="frow"><label>보완점</label><textarea id="f_com_imp">콘텐츠 개념 설명 시 예시를 좀 더 풍부하게 활용하면 좋을 것 같음.</textarea></div>
+        <div class="frow"><label>유의사항</label><textarea id="f_com_cau">3주차 중도환불 건 관련하여, 유사 사례 재발 방지를 위해 초반 상담 시 학부모 fit 확인 절차를 강조할 필요가 있음.</textarea></div>
+        <div class="frow"><label>특이사항</label><textarea id="f_com_note">특이사항이 있을 경우 이곳에 기재합니다.</textarea></div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="panel-preview">
+    <div class="preview-shell">
+      <iframe id="preview"></iframe>
+    </div>
+  </div>
+</div>
+
+<script>
+const REPORT_CSS = `  @page {
+    size: A4;
+    margin: 0;
+  }
+  html, body { margin: 0; padding: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Noto Sans CJK KR", sans-serif;
+    color: #2b3245;
+    background: #ffffff;
+    font-size: 13px;
+  }
+
+  /* ---------- Cover / Header banner ---------- */
+  .banner {
+    background: linear-gradient(135deg, #16264A 0%, #1E3A6E 55%, #12B4A0 130%);
+    padding: 42px 48px 34px 48px;
+    color: #ffffff;
+  }
+  .banner .tag {
+    display: inline-block;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.4);
+    border-radius: 20px;
+    padding: 4px 12px;
+    margin-bottom: 14px;
+  }
+  .banner h1 {
+    font-size: 26px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .banner .sub {
+    font-size: 12.5px;
+    color: #cfe0f5;
+  }
+
+  .name-row {
+    display: table;
+    width: 100%;
+    margin-top: 22px;
+    table-layout: fixed;
+  }
+  .name-cell {
+    display: table-cell;
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 8px;
+    padding: 10px 14px;
+    text-align: left;
+  }
+  .name-row .name-cell + .name-cell { border-left: none; }
+  .name-cell .label {
+    font-size: 10px;
+    color: #bcd2ec;
+    letter-spacing: 0.5px;
+    margin-bottom: 3px;
+  }
+  .name-cell .value {
+    font-size: 14px;
+    font-weight: 700;
+    color: #ffffff;
+  }
+
+  /* ---------- Content wrapper ---------- */
+  .content { padding: 26px 48px 10px 48px; }
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    margin: 28px 0 14px 0;
+  }
+  .section-title.first { margin-top: 0; }
+  .section-title .num {
+    width: 22px; height: 22px;
+    background: #16264A;
+    color: #fff;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+    line-height: 22px;
+    margin-right: 8px;
+    flex-shrink: 0;
+  }
+  .section-title h2 {
+    font-size: 15.5px;
+    color: #16264A;
+    font-weight: 700;
+  }
+  .section-title .line {
+    flex: 1;
+    height: 1px;
+    background: #e3e7ee;
+    margin-left: 12px;
+  }
+  .legend {
+    font-size: 10px;
+    color: #8a92a3;
+    margin: -4px 0 10px 0;
+  }
+  .legend .dot { display:inline-block; width:8px; height:8px; border-radius:2px; margin-right:4px; vertical-align:middle; }
+
+  /* ---------- basic info table ---------- */
+  table.basic {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #e3e7ee;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  table.basic td {
+    padding: 9px 14px;
+    border: 1px solid #e3e7ee;
+    font-size: 12.5px;
+  }
+  table.basic td.k {
+    background: #f4f6fa;
+    color: #5b6479;
+    font-weight: 700;
+    width: 110px;
+  }
+  table.basic td.v {
+    color: #16264A;
+    font-weight: 500;
+    width: 28%;
+  }
+
+  /* ---------- weekly tables ---------- */
+  .two-col { display: table; width: calc(100% + 14px); table-layout: fixed; border-spacing: 14px 0; margin-left:-14px; }
+  .two-col .col { display: table-cell; vertical-align: top; padding: 0 0 0 14px; }
+
+  table.weekly {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  table.weekly caption {
+    text-align: left;
+    font-size: 12px;
+    font-weight: 700;
+    color: #16264A;
+    padding-bottom: 6px;
+  }
+  table.weekly th {
+    background: #16264A;
+    color: #fff;
+    padding: 8px 6px;
+    font-weight: 600;
+    font-size: 11.5px;
+  }
+  table.weekly td {
+    padding: 8px 6px;
+    text-align: center;
+    border-bottom: 1px solid #eef0f5;
+  }
+  table.weekly tr:nth-child(even) td { background: #f8f9fb; }
+  table.weekly td.week-label {
+    text-align: left;
+    font-weight: 700;
+    color: #16264A;
+  }
+  table.weekly td.warn { color: #d64550; font-weight: 700; }
+  table.weekly td.total { font-weight: 700; color: #16264A; }
+
+  table.weekly.assign-report { table-layout: fixed; }
+  table.weekly.assign-report th:nth-child(1), table.weekly.assign-report td:nth-child(1) { width: 17%; }
+  table.weekly.assign-report th:nth-child(2), table.weekly.assign-report td:nth-child(2) { width: 29%; }
+  table.weekly.assign-report th:nth-child(3), table.weekly.assign-report td:nth-child(3) { width: 24%; }
+  table.weekly.assign-report th:nth-child(4), table.weekly.assign-report td:nth-child(4) { width: 30%; }
+  table.weekly.assign-report td.week-label { white-space: nowrap; }
+  table.weekly.assign-report th { white-space: nowrap; padding-left: 3px; padding-right: 3px; font-size: 11px; }
+
+  /* ---------- score bars (threshold colored) ---------- */
+  .score-grid { width: 100%; }
+  .score-item {
+    padding: 9px 0;
+    border-bottom: 1px dashed #e6e9f0;
+  }
+  .score-item:last-child { border-bottom: none; }
+  .score-header {
+    display: flex;
+    align-items: center;
+  }
+  .score-name {
+    width: 62px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #33394a;
+    flex-shrink: 0;
+    padding-right: 10px;
+  }
+  .score-bar-cell { flex: 1; }
+  .score-bar-bg {
+    background: #eef0f5;
+    border-radius: 6px;
+    height: 13px;
+    width: 100%;
+    position: relative;
+  }
+  .score-bar-fill { height: 13px; border-radius: 6px; }
+  .score-bar-fill.ok { background: linear-gradient(90deg, #12B4A0, #1E88E5); }
+  .score-bar-fill.warn { background: #E08A2C; }
+  .score-bar-fill.danger { background: #D64550; }
+  .score-num {
+    width: 44px;
+    text-align: right;
+    font-weight: 700;
+    padding-left: 10px;
+    flex-shrink: 0;
+    font-size: 13px;
+  }
+  .score-num.ok { color: #16264A; }
+  .score-num.warn { color: #E08A2C; }
+  .score-num.danger { color: #D64550; }
+  .score-desc {
+    font-size: 10.5px;
+    color: #7a8299;
+    line-height: 1.55;
+    margin-top: 5px;
+    padding-left: 72px;
+  }
+  .score-desc ul {
+    margin: 3px 0 0 16px;
+    padding: 0;
+  }
+  .score-desc li { margin-bottom: 1px; }
+
+  /* ---------- checklist style eval table ---------- */
+  table.eval {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  table.eval th {
+    background: #f4f6fa;
+    color: #5b6479;
+    text-align: left;
+    padding: 8px 10px;
+    font-weight: 700;
+    border-bottom: 2px solid #e3e7ee;
+    font-size: 11.5px;
+  }
+  table.eval td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #eef0f5;
+  }
+  table.eval td.pt { text-align: right; font-weight: 700; width: 70px; }
+  table.eval td.pt.ok { color: #16264A; }
+  table.eval td.pt.warn { color: #E08A2C; }
+  table.eval td.pt.danger { color: #D64550; }
+  table.eval tr.total-row td {
+    background: #16264A0d;
+    font-weight: 700;
+    border-top: 2px solid #16264A;
+  }
+  table.eval tr.total-row td.pt.ok { color: #16264A; }
+
+  .badge-good {
+    display: inline-block;
+    background: #e6f8f4;
+    color: #0a9b83;
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+  .badge-warn {
+    display: inline-block;
+    background: #fdf0e2;
+    color: #b9701f;
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+  .badge-danger {
+    display: inline-block;
+    background: #fbe9ea;
+    color: #c23849;
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+
+  /* ---------- certificate table ---------- */
+  table.cert-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  table.cert-table th {
+    background: #16264A;
+    color: #fff;
+    padding: 9px 10px;
+    font-weight: 600;
+    font-size: 11.5px;
+    text-align: center;
+  }
+  table.cert-table td {
+    padding: 10px 10px;
+    text-align: center;
+    border-bottom: 1px solid #eef0f5;
+  }
+  table.cert-table tr:nth-child(even) td { background: #f8f9fb; }
+  table.cert-table td.week-label { text-align: left; font-weight: 700; color: #16264A; }
+  table.cert-table .pct { font-weight: 800; font-size: 13.5px; margin-right: 5px; }
+  table.cert-table .pct.ok { color: #0a9b83; }
+  table.cert-table .pct.danger { color: #D64550; }
+  .cert-note {
+    font-size: 10.5px;
+    color: #8a92a3;
+    margin-top: 6px;
+  }
+
+  /* ---------- comment box ---------- */
+  .comment-box {
+    border: 1px solid #e3e7ee;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .comment-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid #eef0f5;
+  }
+  .comment-item:last-child { border-bottom: none; }
+  .comment-item .c-label {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    color: #ffffff;
+    background: #16264A;
+    border-radius: 5px;
+    padding: 2px 9px;
+    margin-bottom: 7px;
+  }
+  .comment-item.strength .c-label { background: #0a9b83; }
+  .comment-item.improve .c-label { background: #e08a2c; }
+  .comment-item.caution .c-label { background: #d64550; }
+  .comment-item.note .c-label { background: #6b5bd6; }
+  .comment-item .c-text {
+    font-size: 12px;
+    color: #3b4258;
+    line-height: 1.65;
+  }
+
+  .footer-note {
+    margin-top: 22px;
+    padding: 14px 18px;
+    background: #f8f9fb;
+    border-left: 3px solid #12B4A0;
+    font-size: 11.5px;
+    color: #565e70;
+    line-height: 1.6;
+    border-radius: 4px;
+  }
+
+  .page-footer {
+    text-align: center;
+    font-size: 10px;
+    color: #9aa2b1;
+    padding: 16px 0 20px 0;
+  }
+
+  .page-break { page-break-before: always; }
+
+  /* ---------- print pagination safety ---------- */
+  table.basic,
+  table.eval,
+  table.weekly,
+  table.cert-table,
+  .comment-box,
+  .comment-item,
+  .score-item,
+  .two-col,
+  .footer-note {
+    page-break-inside: avoid;
+  }
+  .section-title { page-break-after: avoid; }
+`;
+
+let areaState = [
+  { label:"수업", enabled:true, score:92,
+    desc:"아래 두 가지 교육 내용을 바탕으로 진행한 1:1 실습 평가 결과입니다.\n- 첫 수업에서 선생님이 반드시 지켜야 할 행동양식에 대한 이해\n- 수업 중 발생할 수 있는 이슈 상황에 대한 대처법 이해" },
+  { label:"콘텐츠", enabled:true, score:88,
+    desc:"밀당수학 커리큘럼에 대한 이해와 콘텐츠 이해도를 평가한 결과입니다." },
+  { label:"분석", enabled:true, score:72,
+    desc:"아래 내용에 대한 교육 이해도 평가 결과입니다.\n- 정규 커리큘럼 활용 방법\n- 연산 커리큘럼에 대한 이해\n- 학생의 수업시간별·수준별 데일리 피드(학습세트) 세팅 방법" },
+  { label:"시스템", enabled:true, score:90,
+    desc:"학습관리 시 선생님이 반드시 숙지해야 할 아래 항목에 대한 이해도를 평가한 결과입니다.\n- 학적관리 페이지\n- 슬랙 활용법\n- LMS 시스템" },
+  { label:"관리", enabled:true, score:94,
+    desc:"개강 전 상담과 학부모 첫 주 컨택을 누락 없이 수행했는지, 그리고 이슈 상황에 잘 대처했는지 평가한 결과입니다." },
+];
+
+let discState = [
+  { label:"LMS", enabled:true, score:95 },
+  { label:"학적관리 및 슬랙", enabled:true, score:90 },
+  { label:"콘텐츠 이해", enabled:true, score:88 },
+  { label:"수업의 이해", enabled:true, score:92 },
+  { label:"수업 가이드", enabled:true, score:63 },
+  { label:"피드의 이해와 설정", enabled:true, score:90 },
+  { label:"1:1 실습 총점", enabled:true, score:91 },
+];
+
+let assignState = [
+  { week:"1주차", new:3, recv:1, send:0 },
+  { week:"2주차", new:5, recv:2, send:1 },
+  { week:"3주차", new:4, recv:1, send:0 },
+];
+
+let refundState = [
+  { week:"1주차", full:0, mid:0 },
+  { week:"2주차", full:1, mid:0 },
+  { week:"3주차", full:0, mid:1 },
+];
+
+function fmtNum(v) {
+  const f = parseFloat(v);
+  if (isNaN(f)) return "0";
+  if (Math.abs(f - Math.round(f)) < 1e-9) return String(Math.round(f));
+  let s = f.toFixed(2);
+  s = s.replace(/0+$/,"").replace(/\.$/,"");
+  return s;
+}
+function scoreClass(v) {
+  const f = parseFloat(v) || 0;
+  if (f >= 80) return "ok";
+  if (f >= 70) return "warn";
+  return "danger";
+}
+function certClass(v, th) { return (parseFloat(v) || 0) >= th ? "ok" : "danger"; }
+function certBadge(cls) {
+  return cls === "ok" ? '<span class="badge-good">충족</span>' : '<span class="badge-danger">위험</span>';
+}
+function badgeWord(v) {
+  const f = parseFloat(v) || 0;
+  const cls = scoreClass(f);
+  if (cls === "ok") return f >= 90 ? '<span class="badge-good">우수</span>' : "";
+  if (cls === "warn") return '<span class="badge-warn">주의</span>';
+  return '<span class="badge-danger">위험</span>';
+}
+function val(id) { const e = document.getElementById(id); return e ? e.value : ""; }
+function num(id) { return parseFloat(val(id)) || 0; }
+function escapeHtml(s) {
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+function formatDesc(text) {
+  const lines = String(text).split("\n").map(l=>l.trim()).filter(l=>l.length>0);
+  let html = ""; let inList = false;
+  lines.forEach(line => {
+    if (line.startsWith("- ")) {
+      if (!inList) { html += "<ul>"; inList = true; }
+      html += `<li>${escapeHtml(line.slice(2))}</li>`;
+    } else {
+      if (inList) { html += "</ul>"; inList = false; }
+      html += `<div>${escapeHtml(line)}</div>`;
+    }
+  });
+  if (inList) html += "</ul>";
+  return html;
+}
+function computeSummaryText() {
+  let totalNew=0, totalRecv=0, totalSend=0, totalLeave=0;
+  assignState.forEach(r => { totalNew += Number(r.new)||0; totalRecv += Number(r.recv)||0; totalSend += Number(r.send)||0; });
+  refundState.forEach(r => { totalLeave += (Number(r.full)||0) + (Number(r.mid)||0); });
+  const totalManaged = totalNew + totalRecv;
+  const rate = totalManaged ? (totalLeave/totalManaged*100) : 0;
+  return `총 ${totalManaged}명 배정(신규 ${totalNew}명 · 이관받기 ${totalRecv}명) · 이관보내기 ${totalSend}명 · 총 이탈 ${totalLeave}명 (이탈률 약 ${rate.toFixed(1)}%)`;
+}
+
+function renderAreaForm() {
+  const wrap = document.getElementById("areaForm");
+  wrap.innerHTML = areaState.map((item, i) => `
+    <div class="item-card ${item.enabled ? "" : "is-off"}">
+      <div class="item-card-head">
+        <label class="toggle-row"><span class="toggle-switch"><input type="checkbox" data-group="area" data-idx="${i}" data-field="enabled" ${item.enabled ? "checked" : ""}><span class="slider"></span></span><span class="toggle-text">${item.label}</span></label>
+        <input type="number" step="0.01" class="score-input-sm" data-group="area" data-idx="${i}" data-field="score" value="${item.score}">
+      </div>
+      <textarea data-group="area" data-idx="${i}" data-field="desc" rows="3">${item.desc}</textarea>
+    </div>
+  `).join("");
+}
+
+function renderDiscForm() {
+  const wrap = document.getElementById("discForm");
+  wrap.innerHTML = discState.map((item, i) => `
+    <div class="disc-row ${item.enabled ? "" : "is-off"}">
+      <label class="toggle-row"><span class="toggle-switch"><input type="checkbox" data-group="disc" data-idx="${i}" data-field="enabled" ${item.enabled ? "checked" : ""}><span class="slider"></span></span><span class="toggle-text">${item.label}</span></label>
+      <input type="number" step="0.01" class="score-input-sm" data-group="disc" data-idx="${i}" data-field="score" value="${item.score}">
+    </div>
+  `).join("");
+}
+
+function renderAssignTable() {
+  const wrap = document.getElementById("assignTableWrap");
+  const rows = assignState.map((r, i) => `
+    <tr>
+      <td><input type="text" data-group="assign" data-idx="${i}" data-field="week" value="${r.week}"></td>
+      <td><input type="number" data-group="assign" data-idx="${i}" data-field="new" value="${r.new}"></td>
+      <td><input type="number" data-group="assign" data-idx="${i}" data-field="recv" value="${r.recv}"></td>
+      <td><input type="number" data-group="assign" data-idx="${i}" data-field="send" value="${r.send}"></td>
+      <td><button class="row-del" data-group="assign" data-idx="${i}">✕</button></td>
+    </tr>`).join("");
+  wrap.innerHTML = `<table class="edit-table"><thead><tr><th>주차</th><th>신규</th><th>이관받기</th><th>이관보내기</th><th></th></tr></thead><tbody>${rows}</tbody></table>
+    <button class="add-row-btn" id="addAssignRow">+ 주차 추가</button>`;
+}
+
+function renderRefundTable() {
+  const wrap = document.getElementById("refundTableWrap");
+  const rows = refundState.map((r, i) => `
+    <tr>
+      <td><input type="text" data-group="refund" data-idx="${i}" data-field="week" value="${r.week}"></td>
+      <td><input type="number" data-group="refund" data-idx="${i}" data-field="full" value="${r.full}"></td>
+      <td><input type="number" data-group="refund" data-idx="${i}" data-field="mid" value="${r.mid}"></td>
+      <td class="readonly" id="refundTotal_${i}">${(Number(r.full)||0)+(Number(r.mid)||0)}명</td>
+      <td><button class="row-del" data-group="refund" data-idx="${i}">✕</button></td>
+    </tr>`).join("");
+  wrap.innerHTML = `<table class="edit-table"><thead><tr><th>주차</th><th>신규전액환불</th><th>중도환불</th><th>총이탈</th><th></th></tr></thead><tbody>${rows}</tbody></table>
+    <button class="add-row-btn" id="addRefundRow">+ 주차 추가</button>`;
+}
+
+function buildWeekInputs() {
+  renderAssignTable();
+  renderRefundTable();
+
+  const certWrap = document.getElementById("certBlocks");
+  const certDefaults = [[96,88],[92,78],[88,82]];
+  let cHtml = "";
+  certDefaults.forEach((d, i) => {
+    const w = i+1;
+    cHtml += `<div class="disc-row" style="display:block;"><div class="mini-label2" style="margin-top:0;">${w}주차</div><div class="grid2">
+      <div><div class="hint" style="margin:0 0 2px 0;">유형 정답률(%)</div><input type="number" step="0.01" id="f_cert_${w}_type" value="${d[0]}" style="width:100%;padding:5px 7px;border:1px solid #d8dce5;border-radius:5px;font-size:12px;background:#fffdf2;"></div>
+      <div><div class="hint" style="margin:0 0 2px 0;">심화 정답률(%)</div><input type="number" step="0.01" id="f_cert_${w}_adv" value="${d[1]}" style="width:100%;padding:5px 7px;border:1px solid #d8dce5;border-radius:5px;font-size:12px;background:#fffdf2;"></div>
+    </div></div>`;
+  });
+  certWrap.innerHTML = cHtml;
+
+  document.getElementById("f_summary_text").value = computeSummaryText();
+}
+
+const stateMap = { area: areaState, disc: discState, assign: assignState, refund: refundState };
+
+document.addEventListener("input", (e) => {
+  const t = e.target;
+  if (!t.closest(".panel-form")) return;
+  const group = t.dataset.group;
+  if (group && stateMap[group]) {
+    const idx = parseInt(t.dataset.idx);
+    const field = t.dataset.field;
+    const value = t.type === "checkbox" ? t.checked : t.value;
+    stateMap[group][idx][field] = value;
+
+    if (group === "area") {
+      const card = t.closest(".item-card");
+      if (field === "enabled" && card) card.classList.toggle("is-off", !value);
+    }
+    if (group === "disc") {
+      const row = t.closest(".disc-row");
+      if (field === "enabled" && row) row.classList.toggle("is-off", !value);
+    }
+    if (group === "refund" && (field === "full" || field === "mid")) {
+      const cell = document.getElementById(`refundTotal_${idx}`);
+      if (cell) cell.textContent = ((Number(refundState[idx].full)||0) + (Number(refundState[idx].mid)||0)) + "명";
+    }
+  }
+  renderPreview();
+});
+
+document.addEventListener("click", (e) => {
+  const t = e.target;
+  if (t.classList.contains("row-del")) {
+    const group = t.dataset.group;
+    const idx = parseInt(t.dataset.idx);
+    if (group === "assign") { assignState.splice(idx,1); renderAssignTable(); }
+    if (group === "refund") { refundState.splice(idx,1); renderRefundTable(); }
+    renderPreview();
+  }
+  if (t.id === "addAssignRow") {
+    assignState.push({ week: `${assignState.length+1}주차`, new:0, recv:0, send:0 });
+    renderAssignTable(); renderPreview();
+  }
+  if (t.id === "addRefundRow") {
+    refundState.push({ week: `${refundState.length+1}주차`, full:0, mid:0 });
+    renderRefundTable(); renderPreview();
+  }
+  if (t.id === "genSummaryBtn") {
+    document.getElementById("f_summary_text").value = computeSummaryText();
+    renderPreview();
+  }
+});
+
+function buildReportHTML() {
+  const name = val("f_name"), team = val("f_team");
+  const join = val("f_join"), grad = val("f_grad");
+  const leader = val("f_leader"), hrd = val("f_hrd");
+
+  let areaHtml = "";
+  areaState.filter(x => x.enabled).forEach(item => {
+    const v = item.score; const cls = scoreClass(v);
+    areaHtml += `<div class="score-item"><div class="score-header">
+      <div class="score-name">${escapeHtml(item.label)}</div>
+      <div class="score-bar-cell"><div class="score-bar-bg"><div class="score-bar-fill ${cls}" style="width:${Math.min(v,100)}%;"></div></div></div>
+      <div class="score-num ${cls}">${fmtNum(v)}</div>
+      </div><div class="score-desc">${formatDesc(item.desc)}</div></div>`;
+  });
+
+  const enabledDisc = discState.filter(x => x.enabled);
+  let discHtml = "";
+  enabledDisc.forEach(item => {
+    const v = item.score; const cls = scoreClass(v);
+    const rowClass = item.label === "1:1 실습 총점" ? ' class="total-row"' : "";
+    discHtml += `<tr${rowClass}><td>${escapeHtml(item.label)}</td><td class="pt ${cls}">${fmtNum(v)}점</td></tr>`;
+  });
+
+  const incubItems = [["개강 전 상담 수행률","f_incub_상담"], ["학부모 첫 주 컨택 수행률","f_incub_컨택"]];
+  let incubHtml = "";
+  incubItems.forEach(([label,id]) => {
+    const v = num(id); const cls = scoreClass(v);
+    incubHtml += `<tr><td>${label}</td><td class="pt ${cls}">${fmtNum(v)}점 ${badgeWord(v)}</td></tr>`;
+  });
+
+  let assignHtml = "";
+  assignState.forEach(r => {
+    assignHtml += `<tr><td class="week-label">${escapeHtml(r.week)}</td><td>${fmtNum(r.new)}명</td><td>${fmtNum(r.recv)}명</td><td>${fmtNum(r.send)}명</td></tr>`;
+  });
+
+  let refundHtml = "";
+  refundState.forEach(r => {
+    const full = Number(r.full)||0, mid = Number(r.mid)||0, total = full+mid;
+    const fc = full ? "warn" : "";
+    const mc = mid ? "warn" : "";
+    const tc = total ? "total warn" : "total";
+    refundHtml += `<tr><td class="week-label">${escapeHtml(r.week)}</td><td class="${fc}">${fmtNum(full)}명</td><td class="${mc}">${fmtNum(mid)}명</td><td class="${tc}">${fmtNum(total)}명</td></tr>`;
+  });
+
+  const summaryEnabled = document.getElementById("f_summary_enabled").checked;
+  const summaryText = val("f_summary_text");
+  const summaryBlock = summaryEnabled ? `<div class="footer-note">${escapeHtml(summaryText)}</div>` : "";
+
+  let certHtml = "";
+  for (let w=1; w<=3; w++) {
+    const t = num(`f_cert_${w}_type`), a = num(`f_cert_${w}_adv`);
+    const tcls = certClass(t,90), acls = certClass(a,80);
+    certHtml += `<tr><td class="week-label">${w}주차</td>
+      <td><span class="pct ${tcls}">${fmtNum(t)}%</span>${certBadge(tcls)}</td>
+      <td><span class="pct ${acls}">${fmtNum(a)}%</span>${certBadge(acls)}</td></tr>`;
+  }
+
+  const culGt = val("f_cul_gt"), culAtt = val("f_cul_att");
+  const comStr = val("f_com_str"), comImp = val("f_com_imp"), comCau = val("f_com_cau"), comNote = val("f_com_note");
+
+  return `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><style>${REPORT_CSS}</style></head><body>
+
+  <div class="banner">
+    <span class="tag">4주 OJT 수료 리포트</span>
+    <h1>신입사원 리포트</h1>
+    <div class="sub">4주 육성 프로그램 수료 결과</div>
+    <div class="name-row">
+      <div class="name-cell"><div class="label">이름</div><div class="value">${name}</div></div>
+      <div class="name-cell"><div class="label">소속팀</div><div class="value">${team}</div></div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="section-title first"><div class="num">1</div><h2>기본 정보</h2><div class="line"></div></div>
+    <table class="basic">
+      <tr><td class="k">이름</td><td class="v">${name}</td><td class="k">팀</td><td class="v">${team}</td></tr>
+      <tr><td class="k">입사일</td><td class="v">${join}</td><td class="k">소속팀장</td><td class="v">${leader}</td></tr>
+      <tr><td class="k">수료일</td><td class="v">${grad}</td><td class="k">육성팀 담당자</td><td class="v">${hrd}</td></tr>
+    </table>
+
+    <div class="section-title"><div class="num">2</div><h2>교육 평가 점수 — 영역별 평가</h2><div class="line"></div></div>
+    <div class="legend">
+      <span class="dot" style="background:#12B4A0;"></span>80점 이상
+      <span class="dot" style="background:#E08A2C; margin-left:10px;"></span>70점대
+      <span class="dot" style="background:#D64550; margin-left:10px;"></span>60점대 이하
+    </div>
+    <div class="score-grid">${areaHtml}</div>
+  </div>
+
+  <div class="content page-break" style="padding-top:34px;">
+    <div class="section-title first"><div class="num">3</div><h2>1주차 Discovery 평가 결과</h2><div class="line"></div></div>
+    <table class="eval"><tr><th>평가 항목</th><th style="text-align:right;">점수</th></tr>${discHtml}</table>
+
+    <div class="section-title"><div class="num">4</div><h2>2~4주차 Incubating 평가 결과</h2><div class="line"></div></div>
+    <table class="eval"><tr><th>평가 항목</th><th style="text-align:right;">결과</th></tr>${incubHtml}</table>
+
+    <div class="section-title"><div class="num">5</div><h2>학습관리 주요 지표</h2><div class="line"></div></div>
+    <div class="two-col">
+      <div class="col"><table class="weekly assign-report"><caption>주차별 학생 배정</caption>
+        <tr><th>구분</th><th>신규</th><th>이관 받기</th><th>이관 보내기</th></tr>${assignHtml}</table></div>
+      <div class="col"><table class="weekly"><caption>주차별 환불 학생 수</caption>
+        <tr><th>구분</th><th>신규전액환불</th><th>중도환불</th><th>총 이탈</th></tr>${refundHtml}</table></div>
+    </div>
+    ${summaryBlock}
+  </div>
+
+  <div class="content page-break" style="padding-top:34px;">
+    <div class="section-title first"><div class="num">6</div><h2>Certificate 정답률</h2><div class="line"></div></div>
+    <table class="cert-table"><tr><th style="text-align:left;">구분</th><th>유형 정답률 (기준 90%)</th><th>심화 정답률 (기준 80%)</th></tr>${certHtml}</table>
+    <div class="cert-note">※ 유형 정답률 90% 미만 또는 심화 정답률 80% 미만인 경우 "위험"으로 표시됩니다.</div>
+
+    <div class="section-title"><div class="num">7</div><h2>조직문화 적합성</h2><div class="line"></div></div>
+    <div class="comment-box">
+      <div class="comment-item culture"><div class="c-label">근태</div><div class="c-text">${escapeHtml(culGt)}</div></div>
+      <div class="comment-item culture"><div class="c-label">업무 자세</div><div class="c-text">${escapeHtml(culAtt)}</div></div>
+    </div>
+
+    <div class="section-title"><div class="num">8</div><h2>육성팀 Comment</h2><div class="line"></div></div>
+    <div class="comment-box">
+      <div class="comment-item strength"><div class="c-label">강점</div><div class="c-text">${escapeHtml(comStr)}</div></div>
+      <div class="comment-item improve"><div class="c-label">보완점</div><div class="c-text">${escapeHtml(comImp)}</div></div>
+      <div class="comment-item caution"><div class="c-label">유의사항</div><div class="c-text">${escapeHtml(comCau)}</div></div>
+      <div class="comment-item note"><div class="c-label">특이사항</div><div class="c-text">${escapeHtml(comNote)}</div></div>
+    </div>
+  </div>
+
+  <div class="page-footer">HRD 육성팀 · 신입사원 리포트 · Confidential</div>
+  </body></html>`;
+}
+
+function renderPreview() {
+  const html = buildReportHTML();
+  const iframe = document.getElementById("preview");
+  iframe.srcdoc = html;
+}
+
+function printReport() {
+  const iframe = document.getElementById("preview");
+  iframe.contentWindow.focus();
+  iframe.contentWindow.print();
+}
+
+document.addEventListener("input", (e) => {
+  if (e.target.closest(".panel-form") && !e.target.dataset.group) renderPreview();
+});
+document.getElementById("f_summary_enabled").addEventListener("input", renderPreview);
+
+renderAreaForm();
+renderDiscForm();
+buildWeekInputs();
+renderPreview();
+</script>
+
+</body>
+</html>
